@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matematika Ustasi - O'yin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        #timer-fill {
+            height: 100%;
+            width: 100%;
+            background: #00e676;
+            transition: width 0.1s linear;
+        }
+        .level-badge {
+            display: inline-block;
+            background: #ff9800;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .question-box {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        button.option-btn {
+            background: #ffffff;
+            color: #1e3c72;
+            border: none;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        button.option-btn:active {
+            transform: scale(0.95);
+        }
+        button.option-btn.correct {
+            background: #00e676 !important;
+            color: #000;
+        }
+        button.option-btn.wrong {
+            background: #ff5252 !important;
+            color: #fff;
+        }
+        #start-screen, #end-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #game-screen, #end-screen {
+            display: none;
+        }
+        .main-btn {
+            background: #00e676;
+            color: #000;
+            border: none;
+            padding: 15px 35px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
+        }
+        .main-btn:active {
+            transform: scale(0.95);
+        }
+        h1 { margin-bottom: 10px; font-size: 28px; }
+        p { opacity: 0.9; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Boshlash ekrani -->
+    <div id="start-screen">
+        <h1>🧠 Matematika Ustasi</h1>
+        <p>Tenglamalar va mantiqiy savollarni vaqt tugamasidan yeching!</p>
+        <p style="margin-top:10px; font-size:14px;">Sizda 3 ta jon ❤️ bor.</p>
+        <button class="main-btn" onclick="startGame()">O'yinni Boshlash</button>
+    </div>
+
+    <!-- Asosiy o'yin ekrani -->
+    <div id="game-screen">
+        <div class="header">
+            <div id="lives">❤️❤️❤️</div>
+            <div>Ball: <span id="score">0</span></div>
+        </div>
+        <div class="timer-bar"><div id="timer-fill"></div></div>
+        <div class="level-badge" id="level-text">1-bosqich: Oson</div>
+        <div class="question-box" id="question">Savol yuklanmoqda...</div>
+        <div class="options" id="options"></div>
+    </div>
+
+    <!-- Tugash ekrani -->
+    <div id="end-screen">
+        <h1>O'yin Tugadi!</h1>
+        <p style="font-size: 22px; margin: 15px 0;">To'plagan ballingiz: <b id="final-score" style="color:#00e676;">0</b></p>
+        <p id="feedback-text"></p>
+        <button class="main-btn" onclick="startGame()">Qayta O'ynash</button>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let lives = 3;
+    let timer;
+    let timeLeft = 20;
+    let currentCorrectAnswer = "";
+    let canAnswer = true;
+
+    const logicQuestions = [
+        { q: "3 ta o'g'ilning 1 tadan singlisi bor. Jami nechta bola bor?", a: "4 ta", opts: ["4 ta", "6 ta", "5 ta", "3 ta"] },
+        { q: "5 ta mushuk 5 minutda 5 sichqon tutsa, 100 mushuk 100 sichqonni necha minutda tutadi?", a: "5 minut", opts: ["5 minut", "100 minut", "1 minut", "20 minut"] },
+        { q: "2 + 2 × 2 = ?", a: "6", opts: ["6", "8", "4", "10"] },
+        { q: "Yarimta olma nechta bo'lakka teng?", a: "1 ta", opts: ["1 ta", "2 ta", "0.5 ta", "4 ta"] },
+        { q: "1 kg paxta og'irmi yoki 1 kg temir?", a: "Teng", opts: ["Teng", "Temir", "Paxta", "Bilmayman"] }
+    ];
+
+    function startGame() {
+        score = 0;
+        lives = 3;
+        document.getElementById('score').innerText = score;
+        updateLives();
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        nextQuestion();
+    }
+
+    function updateLives() {
+        document.getElementById('lives').innerText = "❤️".repeat(lives) + "🖤".repeat(3 - lives);
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timeLeft = 20;
+        const fill = document.getElementById('timer-fill');
+        fill.style.width = '100%';
+        fill.style.background = '#00e676';
+
+        timer = setInterval(() => {
+            timeLeft -= 0.1;
+            let percent = (timeLeft / 20) * 100;
+            fill.style.width = percent + '%';
+
+            if (percent < 30) fill.style.background = '#ff5252';
+            else if (percent < 60) fill.style.background = '#ff9800';
+
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                handleWrong(null);
+            }
+        }, 100);
+    }
+
+    function generateQuestion() {
+        let qText = "";
+        let correct;
+        let options = [];
+
+        if (score < 30) {
+            document.getElementById('level-text').innerText = "1-bosqich: Tezkor hisob";
+            let a = Math.floor(Math.random() * 20) + 5;
+            let b = Math.floor(Math.random() * 15) + 2;
+            let isPlus = Math.random() > 0.5;
+            qText = isPlus ? `${a} + ${b} = ?` : `${a + b} - ${b} = ?`;
+            correct = isPlus ? (a + b) : a;
+        } else if (score < 80) {
+            document.getElementById('level-text').innerText = "2-bosqich: Tenglamalar";
+            let x = Math.floor(Math.random() * 12) + 2;
+            let k = Math.floor(Math.random() * 5) + 2;
+            let b = Math.floor(Math.random() * 15) + 1;
+            let res = k * x + b;
+            qText = `${k}x + ${b} = ${res}\nx = ?`;
+            correct = x;
+        } else {
+            document.getElementById('level-text').innerText = "3-bosqich: Mantiq va Tenglama";
+            if (Math.random() > 0.5) {
+                let item = logicQuestions[Math.floor(Math.random() * logicQuestions.length)];
+                currentCorrectAnswer = item.a;
+                let shuffled = [...item.opts].sort(() => Math.random() - 0.5);
+                renderQuestion(item.q, shuffled);
+                return;
+            } else {
+                let x = Math.floor(Math.random() * 10) + 2;
+                let k1 = Math.floor(Math.random() * 4) + 3;
+                let k2 = Math.floor(Math.random() * 2) + 1;
+                let diff = (k1 - k2) * x;
+                qText = `${k1}x - ${diff} = ${k2}x\nx = ?`;
+                correct = x;
+            }
+        }
+
+        currentCorrectAnswer = correct.toString();
+        options.push(correct);
+        while (options.length < 4) {
+            let fake = correct + (Math.floor(Math.random() * 11) - 5);
+            if (fake !== correct && fake > 0 && !options.includes(fake)) {
+                options.push(fake);
+            }
+        }
+        options = options.map(String).sort(() => Math.random() - 0.5);
+        renderQuestion(qText, options);
+    }
+
+    function renderQuestion(qText, options) {
+        document.getElementById('question').innerText = qText;
+        const optionsDiv = document.getElementById('options');
+        optionsDiv.innerHTML = "";
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsDiv.appendChild(btn);
+        });
+        canAnswer = true;
+        startTimer();
+    }
+
+    function checkAnswer(selected, btn) {
+        if (!canAnswer) return;
+        canAnswer = false;
+        clearInterval(timer);
+
+        if (selected === currentCorrectAnswer) {
+            btn.classList.add('correct');
+            score += 10;
+            document.getElementById('score').innerText = score;
+            setTimeout(nextQuestion, 800);
+        } else {
+            handleWrong(btn);
+        }
+    }
+
+    function handleWrong(btn) {
+        canAnswer = false;
+        if (btn) btn.classList.add('wrong');
+        
+        // To'g'ri javobni yashil qilib ko'rsatish
+        const allBtns = document.querySelectorAll('.option-btn');
+        allBtns.forEach(b => {
+            if (b.innerText === currentCorrectAnswer) b.classList.add('correct');
+        });
+
+        lives--;
+        updateLives();
+
+        if (lives <= 0) {
+            setTimeout(endGame, 1200);
+        } else {
+            setTimeout(nextQuestion, 1200);
+        }
+    }
+
+    function nextQuestion() {
+        generateQuestion();
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'block';
+        document.getElementById('final-score').innerText = score;
+        
+        let msg = "";
+        if (score >= 100) msg = "🏆 Ajoyib natija! Siz haqiqiy matematika dahosisiz!";
+        else if (score >= 50) msg = "👏 Yaxshi natija! Tenglamalarni zo'r yechasiz.";
+        else msg = "💪 Yana bir bor urinib ko'ring, albatta uddalaysiz!";
+        document.getElementById('feedback-text').innerText = msg;
+    }
+</script>
+
+</body>
+</html>
